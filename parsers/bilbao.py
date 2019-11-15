@@ -3,19 +3,23 @@ import os.path
 import json
 import datetime
 import os
+import pytz
+
+tz = pytz.timezone('Europe/Madrid')
+now = datetime.datetime.now(tz)
 
 dir_path = os.path.dirname(os.path.realpath(__file__)) + "/"
 
 print(dir_path)
 
-if os.path.exists(dir_path + "data/bilbao.csv") == False:
+if os.path.exists(dir_path + "../data/bilbao.csv") == False:
 
-    f= open(dir_path + "data/bilbao.csv" ,"w+")
+    f= open(dir_path + "../data/bilbao.csv" ,"w+")
     f.write("date,id,station_name,free_bikes,free_docks\n")
     f.close()
 
 date = datetime.datetime.now()
-date = date.strftime("%Y/%m/%d %H:%M")
+date = now.strftime('%Y-%m-%dT%H:%M:%SZ')
 
 url = "https://nextbike.net/maps/nextbike-official.json?city=532"
 
@@ -46,7 +50,7 @@ for station in jsonObject:
 
 print(parsedAvailability)
 
-f= open(dir_path + "data/bilbao.csv" ,"a+")
+f= open(dir_path + "../data/bilbao.csv" ,"a+")
 f.write(parsedAvailability)
 f.close()
 
