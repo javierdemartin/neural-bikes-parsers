@@ -23,14 +23,11 @@ import pytz
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
-tz = pytz.timezone('Europe/Madrid')
+tz = pytz.timezone('America/New_York')
 now = datetime.datetime.now(tz)
 
-print(now)
-print(type(now))
-
 # URL containing the XML feed
-url = "http://api.citybik.es/v2/networks/bicimad"
+url = "http://api.citybik.es/v2/networks/citi-bike-nyc"
 
 r = urlopen(url)
 
@@ -52,20 +49,12 @@ json_body = []
 
 current_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')
 
-print(current_time)
-
 for i in data: 
-   
-    print(i)
 
     idno          = str(i["id"])
     stationName = i["name"]
     freeBikes   = str(i["free_bikes"])
     freeDocks   = str(i["empty_slots"])
-    
-    query = time.strftime("%Y/%m/%d %H:%M") + "," + idno + "," + stationName + "," + freeBikes + "," + freeDocks + "\n"
-    
-    totalQuery += query
 
     meas = {}
     meas["measurement"] = "bikes"
@@ -75,15 +64,7 @@ for i in data:
 
     json_body.append(meas)
 
-print(totalQuery)
-
-
-
-with codecs.open(dir_path + "/../data/madrid.csv", "a", "utf8") as file:
-   file.write(totalQuery)
-
-
-client = InfluxDBClient('localhost', '8086', 'root', 'root', 'Bicis_Madrid_Availability')
+client = InfluxDBClient('localhost', '8086', 'root', 'root', 'Bicis_New_York_Availability')
 
 client.write_points(json_body)
 

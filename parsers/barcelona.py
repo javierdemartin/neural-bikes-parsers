@@ -30,7 +30,7 @@ print(now)
 print(type(now))
 
 # URL containing the XML feed
-url = "http://api.citybik.es/v2/networks/bicimad"
+url = "http://api.citybik.es/v2/networks/bicing"
 
 r = urlopen(url)
 
@@ -79,11 +79,11 @@ print(totalQuery)
 
 
 
-with codecs.open(dir_path + "/../data/madrid.csv", "a", "utf8") as file:
+with codecs.open(dir_path + "/../data/barcelona.csv", "a", "utf8") as file:
    file.write(totalQuery)
 
 
-client = InfluxDBClient('localhost', '8086', 'root', 'root', 'Bicis_Madrid_Availability')
+client = InfluxDBClient('localhost', '8086', 'root', 'root', 'Bicis_Barcelona_Availability')
 
 client.write_points(json_body)
 

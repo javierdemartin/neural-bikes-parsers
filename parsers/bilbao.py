@@ -1,59 +1,94 @@
-import urllib.request
-import os.path
-import json
-import datetime
-import os
-import pytz
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
-tz = pytz.timezone('Europe/Madrid')
-now = datetime.datetime.now(tz)
+###############################
+### Javier de Martin - 2017 ###
+###############################
+
+from influxdb import InfluxDBClient
+
+import xml.etree.ElementTree as ET
+from urllib.request import urlopen
+import urllib
+import string
+import time
+import os
+import datetime
+import re
+import collections
+import codecs
+import json
 
 dir_path = os.path.dirname(os.path.realpath(__file__)) + "/"
 
-print(dir_path)
-
-if os.path.exists(dir_path + "../data/bilbao.csv") == False:
-
-    f= open(dir_path + "../data/bilbao.csv" ,"w+")
-    f.write("date,id,station_name,free_bikes,free_docks\n")
-    f.close()
-
-date = datetime.datetime.now()
-date = now.strftime('%Y-%m-%dT%H:%M:%SZ')
-
+# URL containing the XML feed
 url = "https://nextbike.net/maps/nextbike-official.json?city=532"
 
-jsonData = urllib.request.urlopen(url)
-jsonObject = json.load(jsonData)
+#iresponse = urllib.request.urlopen(url)
+req = urllib.request.Request(url, headers={'User-Agent' : "Magic Browser"}) 
+con = urllib.request.urlopen(req)
 
-jsonObject = jsonObject['countries'][0]['cities'][0]['places']
+#r = urllib.request.urlopen(url)
 
-parsedAvailability = ""
+data = con.read()
 
-idString = "number"
-stationNameString = "name"
-freeBikesString = "bikes"
-freeRacksString = "free_racks"
+encoding = con.info().get_content_charset('utf-8')
 
-for station in jsonObject:
+import requests
 
-    stationAvailablity = ""
-
-    stationAvailablity += str(date) + ","
-    stationAvailablity += str(station[idString]) + ","
-    stationAvailablity += station[stationNameString] + ","
-    stationAvailablity += str(station[freeBikesString]) + ","
-    stationAvailablity += str(station[freeRacksString]) 
-    stationAvailablity += "\n"
-
-    parsedAvailability += stationAvailablity
-
-print(parsedAvailability)
-
-f= open(dir_path + "../data/bilbao.csv" ,"a+")
-f.write(parsedAvailability)
-f.close()
+data = requests.get(url).json()  #json.loads(data.decode(encoding))
+data = data["countries"][0]["cities"][0]["places"]
 
 
+# Get current weekday
+weekno = -1
+weekday = ""
+weekdays = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"]
+weekno = datetime.datetime.today().weekday()
+weekday = weekdays[weekno]
 
+idno        = ""
+stationName = ""
+freeBikes   = ""
+freeDocks   = ""
+query       = ""
+totalQuery  = ""
+
+json_body = []
+
+current_time = time.strftime('%Y-%m-%dT%H:%M:%SZ',time.localtime(time.time()))
+
+for i in data: 
+    
+    idno          = str(i["uid"])
+
+    if '-' in i['name']:
+        i['name'] = i['name'].split('-')[1]
+
+    stationName = i["name"] #.split("-")[1]
+    freeBikes   = str(i["bikes"])
+    freeDocks   = str(i["free_racks"])
+    
+    query = time.strftime("%Y/%m/%d %H:%M") + "," + weekday + "," + idno + "," + stationName + "," + freeBikes + "," + freeDocks + "\n"
+    
+    totalQuery += query
+
+    meas = {}
+    meas["measurement"] = "bikes"
+    meas["tags"] = { "station_name" : stationName, "station_id": idno}
+    meas["time"] = current_time 
+    meas["fields"] = { "value" : str(freeBikes) }
+
+    json_body.append(meas)
+
+print(totalQuery)
+
+with codecs.open(dir_path + "../data/bilbao.csv", "a", "utf8") as file:
+   file.write(totalQuery)
+
+client = InfluxDBClient('localhost', '8086', 'root', 'root', 'Bicis_Bilbao_Availability')
+
+client.write_points(json_body)
+
+client.close()
 
