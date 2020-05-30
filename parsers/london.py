@@ -15,6 +15,7 @@ import os
 import datetime
 import re
 import collections
+import sys
 import codecs
 import json
 
@@ -63,9 +64,16 @@ for i in data:
     meas["measurement"] = "bikes"
     meas["tags"] = { "station_name" : stationName, "station_id": idno}
     meas["time"] = current_time 
-    meas["fields"] = { "value" : str(freeBikes) }
+    meas['fields'] = {'value': str(freeBikes) }
+    
+    if (freeBikes.isnumeric()):
+    	json_body.append(meas)
+    else:
+		# non numeric number of bikes, prevent the operation to be completed
+    	sys.exit()
 
-    json_body.append(meas)
+print(json_body)
+
 
 client = InfluxDBClient('localhost', '8086', 'root', 'root', 'Bicis_London_Availability')
 
